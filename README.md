@@ -55,7 +55,7 @@ npm run dist
 
 ## 验证状态
 
-已用含中文和空格的路径验证 FFprobe 信息读取、缩略图提取及 MP4 转换，确认输出可由 FFprobe 重新读取，并确认同名文件不被覆盖。Windows x64 NSIS 安装包已成功构建。桌面窗口的控件交互、取消流程和其他输出格式仍待验证；详细记录见 [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) 与 [SESSION_SUMMARY.md](SESSION_SUMMARY.md)。
+已用含中文和空格的路径验证 FFprobe 信息读取、缩略图提取及 MP4、MOV、MKV、WebM 转换，输出均能由 FFprobe 重新读取。已验证目标文件名竞态保护，并成功构建 Windows x64 NSIS 安装包。桌面窗口的控件交互和取消流程仍待人工界面确认；详细记录见 [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) 与 [SESSION_SUMMARY.md](SESSION_SUMMARY.md)。
 
 ## 技术选择
 
