@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self';">
+  <title>轻转视频</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><div class="brand-mark">转</div><div><strong>轻转视频</strong><span>简单、可靠的视频格式转换</span></div></div>
+      <div class="engine-status"><i></i> FFmpeg 就绪</div>
+    </header>
+    <main>
+      <div class="page-heading"><div><p class="eyebrow">VIDEO WORKSPACE</p><h1>视频格式转换</h1><p class="subtitle">选择视频，设置输出格式，剩下的交给轻转。</p></div><span class="step-pill">简单三步 · 本地处理</span></div>
+
+      <section class="workspace-card">
+        <div class="section-title"><span class="step-number">01</span><div><h2>选择视频</h2><p>视频在本机处理，不会上传到网络</p></div></div>
+        <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="选择或拖入视频">
+          <div class="upload-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"/></svg></div>
+          <div class="drop-copy"><strong>拖放视频到这里</strong><span>或点击下方按钮，从电脑中选择文件</span></div>
+          <button id="choose-btn" class="button button-secondary" type="button">选择视频文件</button>
+          <small>支持 MP4、MOV、MKV、AVI、WebM 等常见格式</small>
+        </div>
+        <div id="video-card" class="video-card hidden">
+          <div class="preview-wrap"><img id="thumbnail" alt="视频缩略图"><span class="preview-tag">视频预览</span></div>
+          <div class="video-details"><div class="file-heading"><div><h3 id="file-name"></h3><p id="file-path" class="file-path"></p></div><button id="remove-btn" class="icon-button" title="移除视频" aria-label="移除视频">×</button></div><div id="video-meta" class="meta-grid"></div></div>
+        </div>
+      </section>
+
+      <section class="workspace-card settings-card">
+        <div class="section-title"><span class="step-number">02</span><div><h2>设置输出</h2><p>选择格式和清晰度，文件名会自动生成</p></div></div>
+        <div class="settings-grid">
+          <label class="field"><span>输出格式</span><select id="format"><option value="mp4">MP4 <small>· 推荐</small></option><option value="mov">MOV</option><option value="mkv">MKV</option><option value="webm">WebM</option></select></label>
+          <label class="field"><span>画质</span><select id="quality"><option value="balanced">标准画质 · 文件大小适中</option><option value="high">高画质 · 文件较大</option><option value="small">较小文件 · 画质适度降低</option></select></label>
+          <label class="field field-wide"><span>输出文件名</span><div class="input-with-suffix"><input id="output-name" type="text" value="" placeholder="转换后的视频名称"><span id="extension">.mp4</span></div></label>
+          <div class="field field-wide"><span>保存到</span><div class="folder-row"><div class="folder-value"><span class="folder-icon">▰</span><span id="output-dir">请先选择视频</span></div><button id="folder-btn" type="button" class="button button-outline">更改位置</button></div></div>
+        </div>
+      </section>
+
+      <section id="progress-card" class="workspace-card progress-card hidden" aria-live="polite">
+        <div class="progress-heading"><div><span class="progress-label" id="progress-label">正在准备转换</span><strong id="progress-value">0%</strong></div><button id="cancel-btn" class="button button-outline button-danger" type="button">取消转换</button></div>
+        <div class="progress-track"><div id="progress-fill"></div></div><p id="progress-detail">正在启动 FFmpeg…</p>
+      </section>
+      <div id="notice" class="notice hidden" role="alert"></div>
+      <div id="success-card" class="success-card hidden" aria-live="polite"><div class="success-icon">✓</div><div class="success-copy"><strong>转换完成</strong><span id="success-detail"></span></div><button id="open-output-btn" type="button" class="button button-secondary">打开文件</button><button id="reveal-output-btn" type="button" class="button button-outline">查看文件夹</button></div>
+
+      <div class="footer-row"><div class="privacy-note"><span>▣</span> 文件仅在本机处理</div><button id="convert-btn" type="button" class="button button-primary" disabled><span>开始转换</span><span class="arrow">→</span></button></div>
+      <p class="footnote">轻转使用 FFmpeg 进行视频处理。请确认你有权转换所选视频。</p>
+    </main>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>
