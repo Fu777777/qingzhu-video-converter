@@ -18,3 +18,13 @@
 - **未验证**：MOV、MKV、WebM 编码输出、转换取消行为、损坏输入提示、安装包安装后启动及跨平台构建。系统 FFmpeg 可用，因此“FFmpeg 缺失”状态未在界面中实测。
 - **交付整理**：初始化本地 Git `main` 分支并创建提交；源码 zip 与 Windows x64 安装包已放到 `outputs/`。
 - **已知限制**：转换编码器依赖系统 FFmpeg 构建。打包日志提示使用默认 Electron 图标，尚未定制图标或签名安装包。当前没有 GitHub remote，环境未检测到 `gh` CLI，GitHub 插件也未提供仓库创建能力，因此没有真实 GitHub 链接。
+
+## 2026-10-28 · 阶段三：复核与安全加固
+
+- **复核发现**：原实现先检查目标文件，再直接启动 FFmpeg 写最终文件；若转换期间目标路径被其他文件占用，失败清理可能误删该文件。
+- **修复**：FFmpeg 现在写入输出目录内的随机临时文件。成功后使用硬链接原子发布；若文件系统不支持硬链接，回退到独占创建并流式复制。已有目标时发布失败且保留目标内容。异常/取消时只清理本次临时文件。
+- **安全加固**：升级 Electron 到当前稳定版本 45.1.0；对所有 IPC 请求校验发送页面，拒绝导航到其他页面及新窗口。保留 context isolation、sandbox、Node integration 关闭和限制性 CSP。
+- **理由**：当前日期的 Electron 官方发布页列出 45.1.0 为稳定版，安全清单建议使用当前版本和验证 IPC sender。参考：[官方发布页](https://releases.electronjs.org/)、[Electron 安全建议](https://www.electronjs.org/docs/latest/tutorial/security)。
+- **验证**：更新后 `electron@45.1.0` 已安装，四个 JS 文件语法检查通过。Electron 45 桌面窗口可创建。使用中文与空格路径分别转换 MP4、MOV、MKV、WebM 并通过 FFprobe 重新读取：MP4/MOV H.264 640×360，MKV H.264 640×360，WebM VP9 640×360；时长约 3 秒。共享临时输出发布模块验证了成功发布，以及最终文件名在编码期间被占用时返回 `EEXIST` 且原内容保持不变。Windows x64 Electron 45 安装包成功构建。
+- **开发者反馈**：开发者要求先审查项目是否达到标准并提升质量；据此先修复竞态覆盖问题、升级 Electron 并强化 IPC 来源校验，再继续仓库推送。
+- **GitHub**：已通过当前登录账号创建公开仓库 `https://github.com/Fu777777/qingzhu-video-converter`；源码推送待完成。

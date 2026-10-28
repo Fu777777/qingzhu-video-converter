@@ -2,9 +2,12 @@ const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+const publishOutput = require('./publish-output');
 
 let mainWindow;
 let activeConversion = null;
+const appPageUrl = pathToFileURL(path.join(__dirname, 'index.html')).href;
 
 const FORMATS = {
   mp4: { video: 'libx264', audio: 'aac', ext: '.mp4' },
@@ -29,8 +32,19 @@ function createWindow() {
       sandbox: true,
     },
   });
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (url !== appPageUrl) event.preventDefault();
+  });
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
+}
+
+function registerHandler(channel, handler) {
+  ipcMain.handle(channel, (event, ...args) => {
+    if (event.senderFrame?.url !== appPageUrl) throw new Error('拒绝来自非应用页面的请求。');
+    return handler(event, ...args);
+  });
 }
 
 function run(command, args, options = {}) {
@@ -60,8 +74,10 @@ async function findTool(name) {
 
 function friendlyError(error) {
   const message = error?.message || String(error);
+  if (['EACCES', 'EPERM'].includes(error?.code)) return '没有权限读取输入文件或写入目标位置，请更换文件或输出文件夹。';
+  if (error?.code === 'ENOSPC') return '磁盘空间不足，请清理空间后重试。';
   if (/already exists|not overwriting|File exists/i.test(message)) return '目标文件已存在，请修改文件名或选择其他位置。';
-  if (/No such file|does not exist|无法启动|not recognized|ENOENT/i.test(message)) {
+  if (error?.code === 'ENOENT' || /无法启动 (ffmpeg|ffprobe):|not recognized/i.test(message)) {
     return '未找到 FFmpeg 或 FFprobe。请先安装 FFmpeg，并将其加入系统 PATH 后重启应用。';
   }
   if (/permission|denied|拒绝访问/i.test(message)) return '没有权限读取输入文件或写入目标位置，请更换文件或输出文件夹。';
@@ -69,10 +85,16 @@ function friendlyError(error) {
   if (/Invalid data|Invalid argument|moov atom not found|does not contain any stream/i.test(message)) {
     return '无法读取该视频，文件可能损坏或格式不受支持。请尝试其他视频文件。';
   }
-  return message;
+  if (/No such file|does not exist/i.test(message)) return '找不到输入视频或相关文件，请重新选择视频并检查文件是否仍在原位置。';
+  if (/Unknown encoder|encoder .* not found|Error initializing output stream/i.test(message)) {
+    return '当前 FFmpeg 缺少所需编码器。请安装包含 H.264/AAC（或 WebM 所需 VP9/Opus）的版本后重试。';
+  }
+  const lines = message.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const usefulLine = [...lines].reverse().find((line) => /error|failed|invalid|denied|space left|already exists/i.test(line));
+  return (usefulLine || lines.at(-1) || message).slice(0, 240);
 }
 
-ipcMain.handle('video:choose', async () => {
+registerHandler('video:choose', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: '选择视频',
     properties: ['openFile'],
@@ -81,7 +103,7 @@ ipcMain.handle('video:choose', async () => {
   return result.canceled ? null : result.filePaths[0];
 });
 
-ipcMain.handle('video:output-folder', async (_event, currentPath) => {
+registerHandler('video:output-folder', async (_event, currentPath) => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: '选择输出文件夹',
     properties: ['openDirectory', 'createDirectory'],
@@ -90,7 +112,7 @@ ipcMain.handle('video:output-folder', async (_event, currentPath) => {
   return result.canceled ? null : result.filePaths[0];
 });
 
-ipcMain.handle('video:probe', async (_event, filePath) => {
+registerHandler('video:probe', async (_event, filePath) => {
   try {
     const ffprobe = await findTool('ffprobe');
     const ffmpeg = await findTool('ffmpeg');
@@ -127,12 +149,12 @@ ipcMain.handle('video:probe', async (_event, filePath) => {
   }
 });
 
-ipcMain.handle('video:check-tools', async () => {
+registerHandler('video:check-tools', async () => {
   const [ffmpeg, ffprobe] = await Promise.all([findTool('ffmpeg'), findTool('ffprobe')]);
   return { ready: Boolean(ffmpeg && ffprobe), ffmpeg: Boolean(ffmpeg), ffprobe: Boolean(ffprobe) };
 });
 
-ipcMain.handle('video:convert', async (event, options) => {
+registerHandler('video:convert', async (event, options) => {
   if (activeConversion) throw new Error('已有转换任务正在进行。');
   const { input, outputDir, outputName, format, quality } = options;
   const profile = FORMATS[format];
@@ -140,6 +162,7 @@ ipcMain.handle('video:convert', async (event, options) => {
   const safeName = path.basename(String(outputName || '')).trim();
   if (!safeName) throw new Error('请输入输出文件名。');
   const outputPath = path.join(outputDir, safeName.replace(/\.[^.]+$/, '') + profile.ext);
+  const tempPath = path.join(outputDir, `.${path.basename(outputPath, profile.ext)}-${Date.now()}-${Math.random().toString(16).slice(2)}.partial${profile.ext}`);
   if (path.resolve(input) === path.resolve(outputPath)) throw new Error('输出文件不能与原视频相同。');
   try {
     await fs.access(outputPath);
@@ -154,11 +177,11 @@ ipcMain.handle('video:convert', async (event, options) => {
   const args = ['-hide_banner', '-nostats', '-progress', 'pipe:1', '-i', input, '-c:v', profile.video];
   if (format === 'webm') args.push('-crf', quality === 'small' ? '38' : quality === 'high' ? '28' : '33', '-b:v', '0', '-deadline', 'good', '-cpu-used', '4');
   else args.push('-preset', 'medium', '-crf', crf);
-  args.push('-c:a', profile.audio, '-b:a', format === 'webm' ? '128k' : '192k', '-n', outputPath);
+  args.push('-c:a', profile.audio, '-b:a', format === 'webm' ? '128k' : '192k', '-n', tempPath);
 
   return new Promise((resolve, reject) => {
     const child = spawn(ffmpeg, args, { windowsHide: true });
-    const conversion = { child, cancelled: false };
+    const conversion = { child, cancelled: false, tempPath };
     activeConversion = conversion;
     let buffer = '';
     let stderr = '';
@@ -178,18 +201,25 @@ ipcMain.handle('video:convert', async (event, options) => {
     child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
     child.once('error', (error) => {
       activeConversion = null;
-      void fs.rm(outputPath, { force: true }).catch(() => {});
+      void fs.rm(tempPath, { force: true }).catch(() => {});
       reject(new Error(friendlyError(error)));
     });
     child.once('close', async (code) => {
       activeConversion = null;
       if (code === 0) {
         try {
-          const stat = await fs.stat(outputPath);
+          const stat = await fs.stat(tempPath);
+          // Publish only after the encode succeeds and never replace a file
+          // that appeared after the initial existence check.
+          await publishOutput(tempPath, outputPath);
+          await fs.rm(tempPath, { force: true }).catch(() => {});
           resolve({ outputPath, size: stat.size });
-        } catch (error) { reject(new Error(friendlyError(error))); }
+        } catch (error) {
+          await fs.rm(tempPath, { force: true }).catch(() => {});
+          reject(new Error(friendlyError(error)));
+        }
       } else {
-        await fs.rm(outputPath, { force: true }).catch(() => {});
+        await fs.rm(tempPath, { force: true }).catch(() => {});
         if (conversion.cancelled) reject(new Error('转换已取消。'));
         else reject(new Error(friendlyError(new Error(stderr.trim() || `FFmpeg 退出，代码 ${code}`))));
       }
@@ -197,14 +227,14 @@ ipcMain.handle('video:convert', async (event, options) => {
   });
 });
 
-ipcMain.handle('video:cancel', () => {
+registerHandler('video:cancel', () => {
   if (activeConversion) {
     activeConversion.cancelled = true;
     activeConversion.child.kill();
   }
 });
-ipcMain.handle('video:open-path', async (_event, targetPath) => shell.openPath(targetPath));
-ipcMain.handle('video:reveal', async (_event, targetPath) => shell.showItemInFolder(targetPath));
+registerHandler('video:open-path', async (_event, targetPath) => shell.openPath(targetPath));
+registerHandler('video:reveal', async (_event, targetPath) => shell.showItemInFolder(targetPath));
 
 app.whenReady().then(() => {
   createWindow();

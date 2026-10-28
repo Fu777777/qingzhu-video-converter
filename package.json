@@ -3,18 +3,18 @@
   "version": "1.0.0",
   "description": "A simple desktop video converter powered by FFmpeg.",
   "main": "src/main.js",
-  "author": "",
+  "author": "Qingzhu Video Converter contributors",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis"
   },
   "devDependencies": {
-    "electron": "^36.3.2",
+    "electron": "^45.1.0",
     "electron-builder": "^26.0.12"
   },
   "build": {
-    "appId": "com.example.qingzhu-video-converter",
+    "appId": "com.qingzhu.video-converter",
     "productName": "轻转视频",
     "files": ["src/**/*", "package.json"],
     "win": { "target": "nsis" },

@@ -1,6 +1,8 @@
 # 轻转视频
 
-一款面向普通用户的 Windows 桌面视频格式转换器。采用 Electron 构建原生桌面窗口，在本机通过 FFmpeg / FFprobe 命令行读取视频信息、生成缩略图并进行格式转换；视频文件不会上传到网络。
+一款面向普通用户的 Windows 桌面视频格式转换器。采用 Electron 45 构建桌面窗口，在本机通过 FFmpeg / FFprobe 命令行读取视频信息、生成缩略图并进行格式转换；视频文件不会上传到网络。
+
+GitHub 仓库：[Fu777777/qingzhu-video-converter](https://github.com/Fu777777/qingzhu-video-converter)
 
 ## 功能
 
@@ -10,6 +12,7 @@
 - 显示转换进度，支持取消；转换结束可打开结果或在文件夹中查看。
 - 检查输出文件名和目标路径，不会覆盖已有文件。
 - 使用隔离的 Electron preload 和参数数组启动 FFmpeg 子进程。
+- FFmpeg 先写入临时文件，成功后再无覆盖地发布到目标位置；转换失败或取消不会误删原有目标文件。
 
 ## 环境要求
 

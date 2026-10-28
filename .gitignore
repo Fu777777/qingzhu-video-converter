@@ -6,3 +6,4 @@ Thumbs.db
 npm-debug.log*
 work/
 outputs/
+.*.partial.*
