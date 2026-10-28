@@ -27,4 +27,4 @@
 - **理由**：当前日期的 Electron 官方发布页列出 45.1.0 为稳定版，安全清单建议使用当前版本和验证 IPC sender。参考：[官方发布页](https://releases.electronjs.org/)、[Electron 安全建议](https://www.electronjs.org/docs/latest/tutorial/security)。
 - **验证**：更新后 `electron@45.1.0` 已安装，四个 JS 文件语法检查通过。Electron 45 桌面窗口可创建。使用中文与空格路径分别转换 MP4、MOV、MKV、WebM 并通过 FFprobe 重新读取：MP4/MOV H.264 640×360，MKV H.264 640×360，WebM VP9 640×360；时长约 3 秒。共享临时输出发布模块验证了成功发布，以及最终文件名在编码期间被占用时返回 `EEXIST` 且原内容保持不变。Windows x64 Electron 45 安装包成功构建。
 - **开发者反馈**：开发者要求先审查项目是否达到标准并提升质量；据此先修复竞态覆盖问题、升级 Electron 并强化 IPC 来源校验，再继续仓库推送。
-- **GitHub**：已通过当前登录账号创建公开仓库 `https://github.com/Fu777777/qingzhu-video-converter`；源码推送待完成。
+- **GitHub**：已创建公开仓库 `https://github.com/Fu777777/qingzhu-video-converter`，并将本地 `main` 推送为 `origin/main`。

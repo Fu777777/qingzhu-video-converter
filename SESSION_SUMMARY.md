@@ -35,7 +35,7 @@ npm start
 - Electron 已升级至 45.1.0；Windows x64 NSIS 安装包已用该版本成功复建。
 - Electron 窗口已创建，但本次环境中的 UI 检查器将其识别为最小化窗口，无法检查控件状态。因此空状态、界面操作、拖放和进度/取消 UI 未通过人工界面验证。
 - MOV/MKV/WebM 输出、取消、损坏文件提示、安装后的启动及跨平台打包尚未验证。
-- 本地 Git `main` 分支已初始化并提交，源码 zip 与 Windows x64 安装包已准备到 `outputs/`。
+- 本地 Git `main` 已配置 `origin` 并推送至 GitHub；源码 zip 与 Windows x64 安装包已准备到 `outputs/`。
 
 ## GitHub 提交清单
 
@@ -49,6 +49,6 @@ npm start
 
 ## 尚未完成
 
-- 已创建公开 GitHub 仓库：[Fu777777/qingzhu-video-converter](https://github.com/Fu777777/qingzhu-video-converter)；本地 remote 配置和代码推送待完成。
+- GitHub 公共仓库已创建并推送：[Fu777777/qingzhu-video-converter](https://github.com/Fu777777/qingzhu-video-converter)。
 - FFmpeg 安装包未随应用捆绑；用户需要自行安装。
 - Windows 安装包已构建，但安装后运行尚未验证；跨平台打包尚待验证。
