@@ -16,4 +16,5 @@
 - **验证**：`npm install --no-audit --no-fund` 成功（319 packages）；三个 JavaScript 文件均通过 `node --check`。使用路径含中文和空格的 3 秒样本，FFprobe 正确读到 640×360、24 fps、H.264/AAC；FFmpeg 成功提取 JPG 缩略图并转出 MP4，输出可由 FFprobe 重新读取（约 3.02 秒、640×360、H.264/AAC）。重复转换到现存目标时，`-n` 拒绝覆盖。`npm run dist` 成功生成 Windows x64 NSIS 安装包。
 - **桌面启动**：Electron 创建了标题为“轻转视频”的窗口；当前计算机使用界面检查工具无法读取其状态（Windows 返回窗口最小化状态）。因此无文件空状态、控件操作、实际拖放及进度/取消 UI 尚未通过人工界面确认。
 - **未验证**：MOV、MKV、WebM 编码输出、转换取消行为、损坏输入提示、安装包安装后启动及跨平台构建。系统 FFmpeg 可用，因此“FFmpeg 缺失”状态未在界面中实测。
-- **已知限制**：转换编码器依赖系统 FFmpeg 构建。打包日志提示使用默认 Electron 图标，尚未定制图标或签名安装包。当前无 GitHub remote，当前环境未检测到 `gh` CLI；因此没有真实 GitHub 链接。
+- **交付整理**：初始化本地 Git `main` 分支并创建提交；源码 zip 与 Windows x64 安装包已放到 `outputs/`。
+- **已知限制**：转换编码器依赖系统 FFmpeg 构建。打包日志提示使用默认 Electron 图标，尚未定制图标或签名安装包。当前没有 GitHub remote，环境未检测到 `gh` CLI，GitHub 插件也未提供仓库创建能力，因此没有真实 GitHub 链接。

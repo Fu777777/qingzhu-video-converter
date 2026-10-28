@@ -33,6 +33,7 @@ npm start
 - `npm run dist` 成功构建 Windows x64 NSIS 安装包。
 - Electron 窗口已创建，但本次环境中的 UI 检查器将其识别为最小化窗口，无法检查控件状态。因此空状态、界面操作、拖放和进度/取消 UI 未通过人工界面验证。
 - MOV/MKV/WebM 输出、取消、损坏文件提示、安装后的启动及跨平台打包尚未验证。
+- 本地 Git `main` 分支已初始化并提交，源码 zip 与 Windows x64 安装包已准备到 `outputs/`。
 
 ## GitHub 提交清单
 
@@ -46,6 +47,6 @@ npm start
 
 ## 尚未完成
 
-- 当前目录最初没有 Git 元数据或 GitHub remote；当前环境未找到 `gh` CLI，也没有创建仓库工具，因此目前没有 GitHub 项目链接。
+- 本地 Git 仓库已初始化，但当前没有 GitHub remote。环境未找到 `gh` CLI，已连接 GitHub 工具也没有创建仓库的能力，因此尚无 GitHub 项目链接；下一步是在 GitHub 创建仓库并配置 remote 后推送。
 - FFmpeg 安装包未随应用捆绑；用户需要自行安装。
-- Windows 安装包及跨平台打包尚待验证。
+- Windows 安装包已构建，但安装后运行尚未验证；跨平台打包尚待验证。
