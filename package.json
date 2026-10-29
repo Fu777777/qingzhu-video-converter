@@ -1,12 +1,13 @@
 {
   "name": "qingzhu-video-converter",
   "version": "1.0.0",
-  "description": "A simple desktop video converter powered by FFmpeg.",
+  "description": "面向普通用户的桌面视频格式转换器，使用 FFmpeg 在本机处理视频。",
   "main": "src/main.js",
   "author": "Qingzhu Video Converter contributors",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
+    "test": "node --test",
     "dist": "electron-builder --win nsis"
   },
   "devDependencies": {
