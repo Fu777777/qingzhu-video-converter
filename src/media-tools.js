@@ -47,9 +47,19 @@ function friendlyError(error) {
 }
 
 // 参数数组启动，并强制关闭 shell，避免用户路径被拼进命令字符串。
+// Windows 不能直接执行 shell 脚本。以 .js 结尾的工具改用当前 Node 启动，
+// 这样测试里的假 ffmpeg 在 Windows 和 Linux 上都能运行。
+function spawnTool(command, args, options = {}) {
+  const shared = { ...options, windowsHide: true, shell: false };
+  if (path.extname(command).toLowerCase() === '.js') {
+    return childProcess.spawn(process.execPath, [command, ...args], shared);
+  }
+  return childProcess.spawn(command, args, shared);
+}
+
 function runProcess(command, args, options = {}) {
   return new Promise((resolve, reject) => {
-    const child = childProcess.spawn(command, args, { ...options, windowsHide: true, shell: false });
+    const child = spawnTool(command, args, options);
     let stdout = '';
     let stderr = '';
     child.stdout?.on('data', (data) => { stdout += data.toString(); });
@@ -255,7 +265,7 @@ async function startConversion({ ffmpegPath, input, outputDir, outputName, forma
     `.${path.basename(fileName, extension)}-${Date.now()}-${Math.random().toString(16).slice(2)}.partial${extension}`,
   );
   const args = buildFfmpegArgs({ input, tempPath, format, quality });
-  const child = childProcess.spawn(ffmpegPath, args, { windowsHide: true, shell: false });
+  const child = spawnTool(ffmpegPath, args);
   const state = { cancelled: false };
   let stderr = '';
   let buffer = '';

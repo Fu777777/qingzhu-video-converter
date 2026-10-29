@@ -37,7 +37,7 @@ npm test
 
 环境：Linux 云端桌面，Node.js v22.23.4，FFmpeg 6.1.1。用户电脑是 Windows，本次没有 Windows 机器。
 
-- `npm test` 通过 19 项。其中包括：
+- 最新一次 Linux 上的 `npm test` 通过 20 项。FFmpeg 从 PATH 查找，缩略图失败使用 Node 脚本。其中包括：
   - 路径含中文和空格的视频，读到 640×360、H.264、24 fps，并得到 JPEG 缩略图。
   - 缩略图命令失败时，仍返回视频信息，并带有“缩略图提取失败”的说明。
   - MP4、MOV、MKV、WebM 真实转换后，再用 ffprobe 读到对应编码、640×360 和音轨。
@@ -60,9 +60,15 @@ npm test
   - 保存目录去掉写权限后提示“没有权限写入保存位置，请更换文件夹。”
   - 从 PATH 移除 FFmpeg 后，右上角显示“缺少 FFmpeg / FFprobe”；再导入视频时提示安装并加入 PATH。
 
+## Windows 测试路径
+
+开发者在 Windows 上运行 `npm test` 时，「真实 FFmpeg」套件失败，因为测试把程序写死成 `/usr/bin/ffmpeg` 和 `/usr/bin/ffprobe`。已经改成从 PATH 查找；缩略图失败用的假程序改为 Node 脚本。应用本体的 `findTool` 原本就会在 Windows 上调用 `where.exe`，没有改查找方式。
+
+这次只在 Linux 上重新跑了 `npm test`。Windows 上的测试、安装包和图形界面仍由用户继续实测，这里标为未验证。
+
 ## 未验证
 
-- 没有在 Windows 上运行，也没有重新执行 `npm run dist`。Windows NSIS 安装包、安装后的启动和代码签名都未验证。
+- 没有在 Windows 上运行修复后的 `npm test`，也没有重新执行 `npm run dist`。Windows NSIS 安装包、安装后的启动、代码签名和 Windows 图形界面都未验证。
 - 开发日志中更早的 Windows 打包记录对应当时的代码，不能当作本次结果。
 - “打开文件”没有验证是否能唤起播放器。“查看文件夹”曾被误点并打开文件管理器，但没有确认它定位到输出文件。
 - 系统文件选择框的按钮在本次英文系统上是英文。中文 Windows 上的系统对话框语言未验证。

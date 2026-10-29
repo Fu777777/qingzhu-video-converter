@@ -70,3 +70,10 @@
 - **验证**：`npm test` 通过 19 项。Linux 云端桌面实际打开窗口，完成空状态、文件选择、中文和空格路径的信息与缩略图、拖放、进度、成功转换、ffprobe 复查、取消清理、拒绝覆盖、无效文本、空文件、只读目录和缺少 FFmpeg。短视频输出为 H.264/AAC、640×360、2.005 秒。
 - **未验证**：Windows 实机、`npm run dist`、安装后的启动、代码签名，以及“打开文件”是否能唤起播放器。系统文件选择框按钮跟随本次英文系统，显示为英文。
 - **取舍**：不把 FFmpeg 打进安装包，避免引入一个本次不能验证的下载和解压流程。读取信息阶段仍不能取消，避免在没有图形界面覆盖的情况下扩大进程管理范围。
+
+## 2026-10-29 · 阶段八：Windows 上测试路径写死
+
+- **开发者反馈**：在 Windows 电脑上运行 `npm test` 时，纯逻辑测试通过，但「真实 FFmpeg」套件全部失败。错误是 `Error: 无法启动 ffmpeg：spawn /usr/bin/ffmpeg ENOENT`。原因是 `test/media-tools.test.js` 把 ffmpeg 和 ffprobe 写死成了 Linux 路径。
+- **决策**：测试改为优先从 PATH 查找。Windows 用 `where.exe`，其他系统用 `which`；找不到定位命令时，再直接使用 `ffmpeg` / `ffprobe` 这两个命令名，让系统按 PATH 解析，包括 Windows 上的 `.exe`。应用本体 `src/main.js` 的 `findTool` 已经是这套跨平台查找，保持不变。
+- **实现**：缩略图失败测试不再使用只能在 Linux 执行的 `fake-ffmpeg.sh`。改为写入 `fake-ffmpeg.js`，由当前 Node 启动并立刻退出。启动时仍然关闭 shell，不把路径拼进命令。
+- **验证**：修复后在 Linux 云端重新运行 `npm test`，20 项通过。Windows 上的 `npm test`、安装包和图形界面仍由用户继续实测，本次环境没有 Windows，这些仍标为未验证。

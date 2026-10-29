@@ -36,8 +36,28 @@ async function sha256(file) {
   return crypto.createHash('sha256').update(data).digest('hex');
 }
 
+// 从 PATH 查找可执行文件。Windows 上 where.exe 会返回 ffmpeg.exe 的完整路径。
+async function findExecutable(name) {
+  const locator = process.platform === 'win32' ? 'where.exe' : 'which';
+  try {
+    const { stdout } = await runProcess(locator, [name]);
+    const found = stdout.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
+    if (found) return found;
+  } catch {
+    // where/which 不在 PATH 里时，下面仍用命令名，让系统继续查找。
+  }
+  return name;
+}
+
+async function writeFakeFfmpeg(dir) {
+  const file = path.join(dir, 'fake-ffmpeg.js');
+  await fs.writeFile(file, 'process.exit(1);\n');
+  return file;
+}
+
 async function inspectMedia(file) {
-  const { stdout } = await runProcess('ffprobe', ['-v', 'error', '-show_format', '-show_streams', '-of', 'json', file]);
+  const probeTool = await findExecutable('ffprobe');
+  const { stdout } = await runProcess(probeTool, ['-v', 'error', '-show_format', '-show_streams', '-of', 'json', file]);
   const data = JSON.parse(stdout);
   return {
     duration: Number(data.format?.duration),
@@ -93,6 +113,19 @@ describe('纯逻辑', () => {
     assert.equal(friendlyError(userError('转换已取消。')), '转换已取消。');
   });
 
+  test('假 ffmpeg 脚本由当前 Node 启动并返回失败', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'qingzhu-fake-'));
+    try {
+      const fakeFfmpeg = await writeFakeFfmpeg(dir);
+      await assert.rejects(
+        () => runProcess(fakeFfmpeg, ['-i', '中文 路径.mp4']),
+        /退出，代码 1/,
+      );
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
   test('启动进程时关闭 shell，路径不会被拼进命令', async (t) => {
     const child = fakeChild();
     let captured;
@@ -112,10 +145,18 @@ describe('真实 FFmpeg', { concurrency: 1, timeout: 180000 }, () => {
   let root;
   let sample;
   let outputDir;
-  const ffmpeg = '/usr/bin/ffmpeg';
-  const ffprobe = '/usr/bin/ffprobe';
+  let ffmpeg;
+  let ffprobe;
 
   before(async () => {
+    ffmpeg = await findExecutable('ffmpeg');
+    ffprobe = await findExecutable('ffprobe');
+    try {
+      await runProcess(ffmpeg, ['-version']);
+      await runProcess(ffprobe, ['-version']);
+    } catch (error) {
+      throw new Error(`测试需要 PATH 中的 ffmpeg 和 ffprobe。${error.message}`);
+    }
     root = await fs.mkdtemp(path.join(os.tmpdir(), 'qingzhu-media-'));
     const sourceDir = path.join(root, '轻转 测试');
     outputDir = path.join(root, '输出 目录');
@@ -157,9 +198,7 @@ describe('真实 FFmpeg', { concurrency: 1, timeout: 180000 }, () => {
   });
 
   test('缩略图失败时仍返回视频信息，并给出明确原因', async () => {
-    const fakeFfmpeg = path.join(root, 'fake-ffmpeg.sh');
-    await fs.writeFile(fakeFfmpeg, '#!/bin/sh\nexit 1\n');
-    await fs.chmod(fakeFfmpeg, 0o755);
+    const fakeFfmpeg = await writeFakeFfmpeg(root);
     const info = await probeVideoFile({ filePath: sample, ffprobePath: ffprobe, ffmpegPath: fakeFfmpeg, tempDir: root });
     assert.equal(info.thumbnail, null);
     assert.match(info.thumbnailError, /缩略图提取失败/);

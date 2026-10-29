@@ -35,7 +35,7 @@ npm install
 npm start
 ```
 
-开发时可以运行自动测试：
+开发时可以运行自动测试。测试会从 PATH 查找 `ffmpeg` 和 `ffprobe`，不会写死某个系统路径。
 
 ```powershell
 npm test
@@ -94,7 +94,7 @@ npm run dist
 
 2026-10-29 在 Linux 云端桌面重新验证，详细记录见 [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) 和 [SESSION_SUMMARY.md](SESSION_SUMMARY.md)。
 
-- `npm test`：19 项通过。覆盖中文路径、带空格路径、四种格式的真实转换和 ffprobe 复查、缩略图失败、取消后清理临时文件、拒绝覆盖、无效输入、错误的保存位置，以及找不到 FFmpeg。
+- `npm test`：20 项通过。测试从 PATH 查找 FFmpeg。覆盖中文路径、带空格路径、四种格式的真实转换和 ffprobe 复查、缩略图失败、取消后清理临时文件、拒绝覆盖、无效输入、错误的保存位置，以及找不到 FFmpeg。
 - 图形界面：空状态、系统文件选择器导入、视频信息和缩略图、拖放导入、进度、转换成功、取消、拒绝覆盖、无效文本、空文件、只读保存位置、缺少 FFmpeg。
 - 界面里一次成功转换的输出，再用 ffprobe 读到 H.264/AAC、640×360、约 2.01 秒。
 
