@@ -14,6 +14,7 @@ GitHub 仓库：[Fu777777/qingzhu-video-converter](https://github.com/Fu777777/q
 - 检查输出文件名和目标路径，不会覆盖已有文件。
 - 使用隔离的 Electron preload 和参数数组启动 FFmpeg 子进程。
 - Windows 安装包使用与应用品牌一致的自定义图标。
+- 桌面菜单已中文化；可从“文件 → 选择视频”或按 `Ctrl+O` 打开系统文件选择器。
 - FFmpeg 先写入临时文件，成功后再无覆盖地发布到目标位置；转换失败或取消不会误删原有目标文件。
 
 ## 环境要求

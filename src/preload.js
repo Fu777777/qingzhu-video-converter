@@ -15,4 +15,9 @@ contextBridge.exposeInMainWorld('videoApp', {
     ipcRenderer.on('video:progress', listener);
     return () => ipcRenderer.removeListener('video:progress', listener);
   },
+  onChooseVideo: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on('app:choose-video', listener);
+    return () => ipcRenderer.removeListener('app:choose-video', listener);
+  },
 });

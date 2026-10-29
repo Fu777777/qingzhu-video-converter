@@ -90,6 +90,7 @@ async function loadVideo(filePath) {
   }
 }
 els.choose.addEventListener('click', async (event) => { event.stopPropagation(); await loadVideo(await api.chooseVideo()); });
+api.onChooseVideo(() => els.choose.click());
 els.dropzone.addEventListener('click', async () => { if (!loadingVideo && !converting) await loadVideo(await api.chooseVideo()); });
 els.dropzone.addEventListener('keydown', (event) => { if (!loadingVideo && !converting && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); els.choose.click(); } });
 els.dropzone.addEventListener('dragover', (event) => { event.preventDefault(); els.dropzone.classList.add('dragover'); });

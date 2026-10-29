@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, Menu, shell } = require('electron');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -15,6 +15,57 @@ const FORMATS = {
   mkv: { video: 'libx264', audio: 'aac', ext: '.mkv' },
   webm: { video: 'libvpx-vp9', audio: 'libopus', ext: '.webm' },
 };
+
+function installAppMenu() {
+  const menu = Menu.buildFromTemplate([
+    {
+      label: '文件',
+      submenu: [
+        {
+          label: '选择视频…',
+          accelerator: 'CmdOrCtrl+O',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app:choose-video');
+          },
+        },
+        { type: 'separator' },
+        { label: '退出', role: 'quit', accelerator: 'CmdOrCtrl+Q' },
+      ],
+    },
+    {
+      label: '编辑',
+      submenu: [
+        { label: '撤销', role: 'undo' }, { label: '重做', role: 'redo' }, { type: 'separator' },
+        { label: '剪切', role: 'cut' }, { label: '复制', role: 'copy' }, { label: '粘贴', role: 'paste' },
+        { label: '全选', role: 'selectAll' },
+      ],
+    },
+    {
+      label: '视图',
+      submenu: [
+        { label: '重新加载', role: 'reload' }, { label: '开发者工具', role: 'toggleDevTools' },
+        { type: 'separator' }, { label: '实际大小', role: 'resetZoom' },
+        { label: '放大', role: 'zoomIn' }, { label: '缩小', role: 'zoomOut' },
+        { type: 'separator' }, { label: '全屏', role: 'togglefullscreen' },
+      ],
+    },
+    {
+      label: '窗口',
+      submenu: [{ label: '最小化', role: 'minimize' }, { label: '关闭窗口', role: 'close' }],
+    },
+    {
+      label: '帮助',
+      submenu: [{
+        label: '关于轻转视频',
+        click: () => dialog.showMessageBox(mainWindow, {
+          type: 'info', title: '关于轻转视频', message: '轻转视频',
+          detail: `版本 ${app.getVersion()}\n本地视频格式转换工具，由 FFmpeg 提供媒体处理能力。`,
+        }),
+      }],
+    },
+  ]);
+  Menu.setApplicationMenu(menu);
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -55,7 +106,12 @@ function run(command, args, options = {}) {
     let stderr = '';
     child.stdout?.on('data', (data) => { stdout += data.toString(); });
     child.stderr?.on('data', (data) => { stderr += data.toString(); });
-    child.once('error', (error) => reject(new Error(`无法启动 ${command}：${error.message}`)));
+    child.once('error', (error) => {
+      const wrapped = new Error(`无法启动 ${command}：${error.message}`, { cause: error });
+      wrapped.code = error.code;
+      wrapped.command = command;
+      reject(wrapped);
+    });
     child.once('close', (code) => {
       if (code === 0) resolve({ stdout, stderr });
       else reject(new Error(stderr.trim() || `${command} 退出，代码 ${code}`));
@@ -78,7 +134,8 @@ function friendlyError(error) {
   if (['EACCES', 'EPERM'].includes(error?.code)) return '没有权限读取输入文件或写入目标位置，请更换文件或输出文件夹。';
   if (error?.code === 'ENOSPC') return '磁盘空间不足，请清理空间后重试。';
   if (/already exists|not overwriting|File exists/i.test(message)) return '目标文件已存在，请修改文件名或选择其他位置。';
-  if (error?.code === 'ENOENT' || /无法启动 (ffmpeg|ffprobe):|not recognized/i.test(message)) {
+  const missingCommand = path.basename(error?.command || error?.path || '').replace(/\.exe$/i, '').toLowerCase();
+  if (['ffmpeg', 'ffprobe'].includes(missingCommand) || /无法启动 .*?(ffmpeg|ffprobe)(?:\.exe)?[:：]|not recognized/i.test(message)) {
     return '未找到 FFmpeg 或 FFprobe。请先安装 FFmpeg，并将其加入系统 PATH 后重启应用。';
   }
   if (/permission|denied|拒绝访问/i.test(message)) return '没有权限读取输入文件或写入目标位置，请更换文件或输出文件夹。';
@@ -238,6 +295,7 @@ registerHandler('video:open-path', async (_event, targetPath) => shell.openPath(
 registerHandler('video:reveal', async (_event, targetPath) => shell.showItemInFolder(targetPath));
 
 app.whenReady().then(() => {
+  installAppMenu();
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
