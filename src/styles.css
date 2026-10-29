@@ -2,3 +2,14 @@
 .engine-status.engine-warning{color:#956233;background:#fff6e7}.engine-status.engine-warning i{background:#d89b41}
 
 .progress-card.indeterminate .progress-track div{animation:indeterminate-slide 1.25s ease-in-out infinite alternate}@keyframes indeterminate-slide{from{transform:translateX(-35%)}to{transform:translateX(210%)}}
+body{font-family:"Microsoft YaHei","微软雅黑","PingFang SC","Noto Sans CJK SC","Source Han Sans SC","WenQuanYi Micro Hei","Droid Sans Fallback",sans-serif}
+.dropzone{height:176px}.drop-copy strong{font-size:15px}.drop-copy span,.dropzone small,.field>span,.file-path,.folder-value,.privacy-note,.progress-card>p,.section-title p,.engine-status{font-size:12px}
+.button,.field select,.field input{font-size:13px}.section-title h2,.file-heading h3{font-size:16px}.subtitle,.progress-label,.success-copy strong,.meta-item strong{font-size:14px}
+.meta-item span{font-size:12px}.meta-item strong{overflow-wrap:anywhere}.meta-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.file-heading h3,.file-path,.success-copy span{white-space:normal;overflow:visible;text-overflow:unset}
+.notice{font-size:13px;line-height:1.5}.notice-warning{background:#fff8ee;border-color:#f0e0c2;color:#8a6232}
+.preview-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;text-align:center;color:#8d5348;background:#fbf6f4;font-size:13px;line-height:1.45}
+.footer-step{margin:0}.footer-step p{margin:0;color:#89919a}
+.page-heading{margin:24px 0 16px}.workspace-card{margin-bottom:12px}.dropzone{height:158px}
+.footer-row{position:sticky;bottom:0;background:#f6f7f9;padding:12px 0 4px;z-index:2}
+@media(max-width:900px){.meta-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

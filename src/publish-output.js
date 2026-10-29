@@ -2,6 +2,8 @@ const fs = require('node:fs/promises');
 const fsNative = require('node:fs');
 const { pipeline } = require('node:stream/promises');
 
+// 编码先写到临时文件。发布时优先创建硬链接：目标已存在会失败，因此不会覆盖。
+// 文件系统不支持硬链接时，用独占方式（wx）新建目标再复制。复制失败且不是“文件已存在”时，删掉这次留下的不完整文件。
 async function publishOutput(tempPath, outputPath) {
   try {
     await fs.link(tempPath, outputPath);
@@ -11,15 +13,13 @@ async function publishOutput(tempPath, outputPath) {
     if (!['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'EXDEV'].includes(error.code)) throw error;
   }
 
-  // Some filesystems do not support hard links. Reserve the final name with
-  // exclusive creation, then stream into that owned file without clobbering.
-  const handle = await fs.open(outputPath, 'wx');
   try {
-    await pipeline(fsNative.createReadStream(tempPath), handle.createWriteStream({ autoClose: false }));
-    await handle.close();
+    await pipeline(
+      fsNative.createReadStream(tempPath),
+      fsNative.createWriteStream(outputPath, { flags: 'wx' }),
+    );
   } catch (error) {
-    await handle.close().catch(() => {});
-    await fs.rm(outputPath, { force: true }).catch(() => {});
+    if (error.code !== 'EEXIST') await fs.rm(outputPath, { force: true }).catch(() => {});
     throw error;
   }
 }

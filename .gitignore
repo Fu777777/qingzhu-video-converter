@@ -4,6 +4,10 @@ release/
 .DS_Store
 Thumbs.db
 npm-debug.log*
+*.log
+.env
+.env.*
+coverage/
 work/
 outputs/
 .*.partial.*

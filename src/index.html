@@ -11,10 +11,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div class="brand"><div class="brand-mark">转</div><div><strong>轻转视频</strong><span>简单、可靠的视频格式转换</span></div></div>
-      <div class="engine-status"><i></i> FFmpeg 就绪</div>
+      <div class="engine-status"><i></i>正在检查 FFmpeg…</div>
     </header>
     <main>
-      <div class="page-heading"><div><p class="eyebrow">VIDEO WORKSPACE</p><h1>视频格式转换</h1><p class="subtitle">选择视频，设置输出格式，剩下的交给轻转。</p></div><span class="step-pill">简单三步 · 本地处理</span></div>
+      <div class="page-heading"><div><p class="eyebrow">视频工作台</p><h1>视频格式转换</h1><p class="subtitle">选择视频，确认信息，再设置格式并开始转换。</p></div><span class="step-pill">简单三步 · 本地处理</span></div>
 
       <section class="workspace-card">
         <div class="section-title"><span class="step-number">01</span><div><h2>选择视频</h2><p>视频在本机处理，不会上传到网络</p></div></div>
@@ -25,7 +25,7 @@
           <small>支持 MP4、MOV、MKV、AVI、WebM 等常见格式</small>
         </div>
         <div id="video-card" class="video-card hidden">
-          <div class="preview-wrap"><img id="thumbnail" alt="视频缩略图"><span class="preview-tag">视频预览</span></div>
+          <div class="preview-wrap" id="preview-wrap"><img id="thumbnail" alt="视频缩略图"><div id="thumbnail-fallback" class="preview-fallback hidden">无法生成预览</div><span class="preview-tag" id="preview-tag">视频预览</span></div>
           <div class="video-details"><div class="file-heading"><div><h3 id="file-name"></h3><p id="file-path" class="file-path"></p></div><button id="remove-btn" class="icon-button" title="移除视频" aria-label="移除视频">×</button></div><div id="video-meta" class="meta-grid"></div></div>
         </div>
       </section>
@@ -47,10 +47,11 @@
       <div id="notice" class="notice hidden" role="alert"></div>
       <div id="success-card" class="success-card hidden" aria-live="polite"><div class="success-icon">✓</div><div class="success-copy"><strong>转换完成</strong><span id="success-detail"></span></div><button id="open-output-btn" type="button" class="button button-secondary">打开文件</button><button id="reveal-output-btn" type="button" class="button button-outline">查看文件夹</button></div>
 
-      <div class="footer-row"><div class="privacy-note"><span>▣</span> 文件仅在本机处理</div><button id="convert-btn" type="button" class="button button-primary" disabled><span>开始转换</span><span class="arrow">→</span></button></div>
+      <div class="footer-row"><div class="section-title footer-step"><span class="step-number">03</span><div><h2>开始转换</h2><p>文件只在本机处理，不会上传</p></div></div><button id="convert-btn" type="button" class="button button-primary" disabled><span>开始转换</span><span class="arrow">→</span></button></div>
       <p class="footnote">轻转使用 FFmpeg 进行视频处理。请确认你有权转换所选视频。</p>
     </main>
   </div>
+  <script src="format.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>
