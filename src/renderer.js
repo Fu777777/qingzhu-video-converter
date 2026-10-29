@@ -8,11 +8,13 @@ const els = {
   progressLabel: $('#progress-label'), progressValue: $('#progress-value'), progressFill: $('#progress-fill'),
   progressDetail: $('#progress-detail'), cancel: $('#cancel-btn'), notice: $('#notice'), success: $('#success-card'),
   successDetail: $('#success-detail'), openOutput: $('#open-output-btn'), revealOutput: $('#reveal-output-btn'),
+  settings: [$('#format'), $('#quality'), $('#output-name'), $('#folder-btn')],
 };
 const engineStatus = document.querySelector('.engine-status');
 let video = null;
 let outputPath = null;
 let converting = false;
+let loadingVideo = false;
 let progressDuration = 0;
 
 function formatDuration(seconds) {
@@ -37,7 +39,14 @@ function formatFrameRate(value) {
 function showNotice(message) { els.notice.textContent = message; els.notice.classList.remove('hidden'); }
 function clearNotice() { els.notice.textContent = ''; els.notice.classList.add('hidden'); }
 function refreshConvertButton() {
-  els.convert.disabled = !video || converting || !els.outputName.value.trim() || !els.outputDir.dataset.path;
+  els.convert.disabled = !video || converting || loadingVideo || !els.outputName.value.trim() || !els.outputDir.dataset.path;
+}
+function setInputBusy(busy) {
+  els.choose.disabled = busy;
+  els.remove.disabled = busy;
+  els.dropzone.setAttribute('aria-disabled', String(busy));
+  els.settings.forEach((control) => { control.disabled = busy; });
+  refreshConvertButton();
 }
 api.checkTools().then(({ ready, ffmpeg, ffprobe }) => {
   const missing = [!ffmpeg && 'FFmpeg', !ffprobe && 'FFprobe'].filter(Boolean).join(' / ');
@@ -66,29 +75,33 @@ function renderVideo(info) {
   refreshConvertButton();
 }
 async function loadVideo(filePath) {
-  if (!filePath) return;
+  if (!filePath || converting || loadingVideo) return;
+  loadingVideo = true;
+  setInputBusy(true);
   clearNotice();
   els.success.classList.add('hidden');
-  els.choose.disabled = true;
   els.dropzone.querySelector('.drop-copy strong').textContent = '正在读取视频信息…';
   try { renderVideo(await api.probe(filePath)); }
   catch (error) { showNotice(error.message || '读取视频失败。'); }
   finally {
-    els.choose.disabled = false;
+    loadingVideo = false;
+    setInputBusy(false);
     els.dropzone.querySelector('.drop-copy strong').textContent = '拖放视频到这里';
   }
 }
 els.choose.addEventListener('click', async (event) => { event.stopPropagation(); await loadVideo(await api.chooseVideo()); });
-els.dropzone.addEventListener('click', async () => { if (!els.choose.disabled) await loadVideo(await api.chooseVideo()); });
-els.dropzone.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); els.choose.click(); } });
+els.dropzone.addEventListener('click', async () => { if (!loadingVideo && !converting) await loadVideo(await api.chooseVideo()); });
+els.dropzone.addEventListener('keydown', (event) => { if (!loadingVideo && !converting && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); els.choose.click(); } });
 els.dropzone.addEventListener('dragover', (event) => { event.preventDefault(); els.dropzone.classList.add('dragover'); });
 els.dropzone.addEventListener('dragleave', () => els.dropzone.classList.remove('dragover'));
 els.dropzone.addEventListener('drop', async (event) => {
   event.preventDefault(); els.dropzone.classList.remove('dragover');
+  if (loadingVideo || converting) { showNotice('当前任务完成后再更换视频。'); return; }
   const file = event.dataTransfer.files[0];
   if (file) await loadVideo(await api.getPathForDroppedFile(file));
 });
 els.remove.addEventListener('click', () => {
+  if (loadingVideo || converting) return;
   video = null; els.videoCard.classList.add('hidden'); els.dropzone.classList.remove('hidden');
   els.outputDir.textContent = '请先选择视频'; delete els.outputDir.dataset.path;
   els.outputName.value = ''; clearNotice(); els.success.classList.add('hidden'); refreshConvertButton();
@@ -96,30 +109,37 @@ els.remove.addEventListener('click', () => {
 els.format.addEventListener('change', () => { els.extension.textContent = `.${els.format.value}`; els.success.classList.add('hidden'); });
 els.outputName.addEventListener('input', refreshConvertButton);
 els.folder.addEventListener('click', async () => {
+  if (loadingVideo || converting) return;
   const folder = await api.chooseOutputFolder(els.outputDir.dataset.path);
   if (folder) { els.outputDir.textContent = folder; els.outputDir.dataset.path = folder; refreshConvertButton(); }
 });
 els.convert.addEventListener('click', async () => {
   if (!video || converting) return;
   clearNotice(); els.success.classList.add('hidden'); converting = true; progressDuration = video.duration;
+  setInputBusy(true);
   els.progress.classList.remove('hidden'); els.progressLabel.textContent = '正在转换';
-  els.progressValue.textContent = '0%'; els.progressFill.style.width = '0%'; els.progressDetail.textContent = '正在启动 FFmpeg…';
+  els.progress.classList.toggle('indeterminate', !progressDuration);
+  els.progressValue.textContent = progressDuration ? '0%' : '处理中';
+  els.progressFill.style.width = progressDuration ? '0%' : '30%';
+  els.progressDetail.textContent = progressDuration ? '正在启动 FFmpeg…' : '视频时长未知，正在处理；完成时间取决于文件大小。';
   refreshConvertButton();
   try {
     const result = await api.convert({
       input: video.path, outputDir: els.outputDir.dataset.path, outputName: els.outputName.value,
       format: els.format.value, quality: els.quality.value,
     });
+    els.progress.classList.remove('indeterminate');
     outputPath = result.outputPath;
     els.progress.classList.add('hidden');
     els.successDetail.textContent = `${result.outputPath} · ${formatSize(result.size)}`;
     els.success.classList.remove('hidden');
   } catch (error) {
+    els.progress.classList.remove('indeterminate');
     els.progress.classList.add('hidden');
     const message = error.message || '视频转换失败。';
     if (message.includes('取消')) { showNotice('转换已取消。'); }
     else showNotice(message);
-  } finally { converting = false; els.cancel.disabled = false; refreshConvertButton(); }
+  } finally { converting = false; els.cancel.disabled = false; setInputBusy(false); }
 });
 api.onProgress(({ elapsed }) => {
   if (!converting || !progressDuration) return;

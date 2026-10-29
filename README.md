@@ -10,8 +10,10 @@ GitHub 仓库：[Fu777777/qingzhu-video-converter](https://github.com/Fu777777/q
 - 提取代表性画面作为缩略图，临时图像在读取后清理。
 - 转换为 MP4、MOV、MKV 或 WebM，提供标准、高画质和较小文件三档。
 - 显示转换进度，支持取消；转换结束可打开结果或在文件夹中查看。
+- 转换时锁定素材和输出设置，避免界面状态与正在处理的任务不一致；无法读取时长的视频使用动态进度提示。
 - 检查输出文件名和目标路径，不会覆盖已有文件。
 - 使用隔离的 Electron preload 和参数数组启动 FFmpeg 子进程。
+- Windows 安装包使用与应用品牌一致的自定义图标。
 - FFmpeg 先写入临时文件，成功后再无覆盖地发布到目标位置；转换失败或取消不会误删原有目标文件。
 
 ## 环境要求
@@ -55,7 +57,7 @@ npm run dist
 
 ## 验证状态
 
-已用含中文和空格的路径验证 FFprobe 信息读取、缩略图提取及 MP4、MOV、MKV、WebM 转换，输出均能由 FFprobe 重新读取。已验证目标文件名竞态保护，并成功构建 Windows x64 NSIS 安装包。桌面窗口的控件交互和取消流程仍待人工界面确认；详细记录见 [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) 与 [SESSION_SUMMARY.md](SESSION_SUMMARY.md)。
+已用含中文和空格的路径验证 FFprobe 信息读取、缩略图提取及 MP4、MOV、MKV、WebM 转换，输出均能由 FFprobe 重新读取。已从桌面窗口完成文件选择和一次 MP4 转换，并验证目标文件名竞态保护及 Windows x64 NSIS 安装包构建。拖放导入、取消和损坏文件提示尚待可见界面确认；详细记录见 [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) 与 [SESSION_SUMMARY.md](SESSION_SUMMARY.md)。
 
 ## 技术选择
 

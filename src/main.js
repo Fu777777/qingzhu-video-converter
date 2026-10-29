@@ -23,6 +23,7 @@ function createWindow() {
     minWidth: 860,
     minHeight: 680,
     title: '轻转视频',
+    icon: path.join(__dirname, '..', 'assets', 'icon.ico'),
     show: false,
     backgroundColor: '#f6f7f9',
     webPreferences: {
@@ -194,7 +195,7 @@ registerHandler('video:convert', async (event, options) => {
         if (key === 'out_time' && value) {
           const parts = value.split(':').map(Number);
           const elapsed = parts[0] * 3600 + parts[1] * 60 + parts[2];
-          event.sender.send('video:progress', { elapsed });
+          if (!event.sender.isDestroyed()) event.sender.send('video:progress', { elapsed });
         }
       }
     });
