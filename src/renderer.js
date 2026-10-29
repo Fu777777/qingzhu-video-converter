@@ -148,6 +148,15 @@ api.onProgress(({ elapsed }) => {
   els.progressValue.textContent = `${percent}%`; els.progressFill.style.width = `${percent}%`;
   els.progressDetail.textContent = `已处理 ${formatDuration(elapsed)} / ${formatDuration(progressDuration)}`;
 });
-els.cancel.addEventListener('click', async () => { els.cancel.disabled = true; els.progressLabel.textContent = '正在取消…'; await api.cancel(); });
+els.cancel.addEventListener('click', async () => {
+  els.cancel.disabled = true;
+  els.progressLabel.textContent = '正在取消…';
+  try { await api.cancel(); }
+  catch (error) {
+    els.cancel.disabled = false;
+    els.progressLabel.textContent = '正在转换';
+    showNotice(error.message || '暂时无法取消转换，请稍后重试。');
+  }
+});
 els.openOutput.addEventListener('click', () => { if (outputPath) api.openPath(outputPath); });
 els.revealOutput.addEventListener('click', () => { if (outputPath) api.reveal(outputPath); });

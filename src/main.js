@@ -93,9 +93,13 @@ function createWindow() {
 }
 
 function registerHandler(channel, handler) {
-  ipcMain.handle(channel, (event, ...args) => {
-    if (event.senderFrame?.url !== appPageUrl) throw new Error('拒绝来自非应用页面的请求。');
-    return handler(event, ...args);
+  ipcMain.handle(channel, async (event, ...args) => {
+    try {
+      if (event.senderFrame?.url !== appPageUrl) throw new Error('拒绝来自非应用页面的请求。');
+      return await handler(event, ...args);
+    } catch (error) {
+      return { __videoAppError: true, message: error?.message || '操作失败，请重试。' };
+    }
   });
 }
 
@@ -135,7 +139,7 @@ function friendlyError(error) {
   if (error?.code === 'ENOSPC') return '磁盘空间不足，请清理空间后重试。';
   if (/already exists|not overwriting|File exists/i.test(message)) return '目标文件已存在，请修改文件名或选择其他位置。';
   const missingCommand = path.basename(error?.command || error?.path || '').replace(/\.exe$/i, '').toLowerCase();
-  if (['ffmpeg', 'ffprobe'].includes(missingCommand) || /无法启动 .*?(ffmpeg|ffprobe)(?:\.exe)?[:：]|not recognized/i.test(message)) {
+  if (['ffmpeg', 'ffprobe'].includes(missingCommand) || /无法启动 .*?(ffmpeg|ffprobe)(?:\.exe)?[:：]|(?:ffmpeg|ffprobe)(?:\s*\/\s*(?:ffmpeg|ffprobe))?\s+not found|not recognized/i.test(message)) {
     return '未找到 FFmpeg 或 FFprobe。请先安装 FFmpeg，并将其加入系统 PATH 后重启应用。';
   }
   if (/permission|denied|拒绝访问/i.test(message)) return '没有权限读取输入文件或写入目标位置，请更换文件或输出文件夹。';
@@ -239,8 +243,13 @@ registerHandler('video:convert', async (event, options) => {
 
   return new Promise((resolve, reject) => {
     const child = spawn(ffmpeg, args, { windowsHide: true });
-    const conversion = { child, cancelled: false, tempPath };
+    const conversion = { child, cancelled: false, quitRequested: false, tempPath };
     activeConversion = conversion;
+    const cleanup = async () => {
+      await fs.rm(tempPath, { force: true }).catch(() => {});
+      if (activeConversion === conversion) activeConversion = null;
+      if (conversion.quitRequested) app.quit();
+    };
     let buffer = '';
     let stderr = '';
     child.stdout.on('data', (chunk) => {
@@ -257,29 +266,27 @@ registerHandler('video:convert', async (event, options) => {
       }
     });
     child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
-    child.once('error', (error) => {
-      activeConversion = null;
-      void fs.rm(tempPath, { force: true }).catch(() => {});
+    child.once('error', async (error) => {
+      await cleanup();
       reject(new Error(friendlyError(error)));
     });
     child.once('close', async (code) => {
-      activeConversion = null;
-      if (code === 0) {
-        try {
+      try {
+        if (code === 0 && !conversion.cancelled) {
           const stat = await fs.stat(tempPath);
           // Publish only after the encode succeeds and never replace a file
           // that appeared after the initial existence check.
           await publishOutput(tempPath, outputPath);
-          await fs.rm(tempPath, { force: true }).catch(() => {});
           resolve({ outputPath, size: stat.size });
-        } catch (error) {
-          await fs.rm(tempPath, { force: true }).catch(() => {});
-          reject(new Error(friendlyError(error)));
+        } else if (conversion.cancelled) {
+          reject(new Error('转换已取消。'));
+        } else {
+          reject(new Error(friendlyError(new Error(stderr.trim() || `FFmpeg 退出，代码 ${code}`))));
         }
-      } else {
-        await fs.rm(tempPath, { force: true }).catch(() => {});
-        if (conversion.cancelled) reject(new Error('转换已取消。'));
-        else reject(new Error(friendlyError(new Error(stderr.trim() || `FFmpeg 退出，代码 ${code}`))));
+      } catch (error) {
+        reject(new Error(friendlyError(error)));
+      } finally {
+        await cleanup();
       }
     });
   });
@@ -300,4 +307,10 @@ app.whenReady().then(() => {
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('before-quit', () => { if (activeConversion) activeConversion.child.kill(); });
+app.on('before-quit', (event) => {
+  if (!activeConversion || activeConversion.quitRequested) return;
+  event.preventDefault();
+  activeConversion.quitRequested = true;
+  activeConversion.cancelled = true;
+  activeConversion.child.kill();
+});

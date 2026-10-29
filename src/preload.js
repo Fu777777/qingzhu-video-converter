@@ -1,14 +1,20 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
+async function invoke(channel, ...args) {
+  const result = await ipcRenderer.invoke(channel, ...args);
+  if (result?.__videoAppError) throw new Error(result.message);
+  return result;
+}
+
 contextBridge.exposeInMainWorld('videoApp', {
-  chooseVideo: () => ipcRenderer.invoke('video:choose'),
-  chooseOutputFolder: (currentPath) => ipcRenderer.invoke('video:output-folder', currentPath),
-  probe: (filePath) => ipcRenderer.invoke('video:probe', filePath),
-  checkTools: () => ipcRenderer.invoke('video:check-tools'),
-  convert: (options) => ipcRenderer.invoke('video:convert', options),
-  cancel: () => ipcRenderer.invoke('video:cancel'),
-  openPath: (targetPath) => ipcRenderer.invoke('video:open-path', targetPath),
-  reveal: (targetPath) => ipcRenderer.invoke('video:reveal', targetPath),
+  chooseVideo: () => invoke('video:choose'),
+  chooseOutputFolder: (currentPath) => invoke('video:output-folder', currentPath),
+  probe: (filePath) => invoke('video:probe', filePath),
+  checkTools: () => invoke('video:check-tools'),
+  convert: (options) => invoke('video:convert', options),
+  cancel: () => invoke('video:cancel'),
+  openPath: (targetPath) => invoke('video:open-path', targetPath),
+  reveal: (targetPath) => invoke('video:reveal', targetPath),
   getPathForDroppedFile: (file) => webUtils.getPathForFile(file),
   onProgress: (callback) => {
     const listener = (_event, value) => callback(value);

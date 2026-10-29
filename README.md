@@ -58,7 +58,7 @@ npm run dist
 
 ## 验证状态
 
-已用含中文和空格的路径验证 FFprobe 信息读取、缩略图提取及 MP4、MOV、MKV、WebM 转换，输出均能由 FFprobe 重新读取。已从桌面窗口完成文件选择和一次 MP4 转换，并验证目标文件名竞态保护及 Windows x64 NSIS 安装包构建。拖放导入、取消和损坏文件提示尚待可见界面确认；详细记录见 [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) 与 [SESSION_SUMMARY.md](SESSION_SUMMARY.md)。
+已用含中文和空格的路径验证 FFprobe 信息读取、缩略图提取及 MP4、MOV、MKV、WebM 转换，输出均能由 FFprobe 重新读取。已从桌面窗口完成文件选择和 MP4 转换；还验证了取消转换、退出时清理、无效视频提示、FFmpeg 缺失提示及 Windows x64 NSIS 构建。拖放导入尚未人工确认，正式安装后的启动也未验证；详细记录见 [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) 与 [SESSION_SUMMARY.md](SESSION_SUMMARY.md)。
 
 ## 技术选择
 
